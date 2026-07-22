@@ -1,6 +1,7 @@
 import initSqlJs, { Database as SqlJsDatabase, SqlJsStatic, SqlValue } from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import { StorageError } from "./errors";
+import type { AppFileHandle } from "../../shared/storageHandles";
 
 /**
  * The Repository layer's foundation, per Design_Decisions.md's
@@ -41,7 +42,7 @@ function loadSqlJs(): Promise<SqlJsStatic> {
 }
 
 let db: SqlJsDatabase | null = null;
-let fileHandle: FileSystemFileHandle | null = null;
+let fileHandle: AppFileHandle | null = null;
 let writeTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
@@ -68,7 +69,7 @@ function enqueue<T>(task: () => Promise<T>): Promise<T> {
   return result;
 }
 
-async function connectLocked(handle: FileSystemFileHandle): Promise<void> {
+async function connectLocked(handle: AppFileHandle): Promise<void> {
   if (db) {
     await disconnectLocked();
   }
@@ -127,7 +128,7 @@ async function disconnectLocked(): Promise<void> {
   }
 }
 
-async function connect(handle: FileSystemFileHandle): Promise<void> {
+async function connect(handle: AppFileHandle): Promise<void> {
   return enqueue(() => connectLocked(handle));
 }
 

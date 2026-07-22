@@ -1,6 +1,7 @@
 import { storageClient } from "../storage";
 import { WorkspaceInfo, WorkspaceSummary } from "./types";
 import { getHandle, setHandle, deleteHandle, lastImportDirKey } from "./handleStore";
+import type { AppDirectoryHandle } from "../../shared/storageHandles";
 import m0001 from "./migrations/0001_workspace_and_papers.sql?raw";
 import m0002 from "./migrations/0002_reading_state.sql?raw";
 import m0003 from "./migrations/0003_notebook.sql?raw";
@@ -56,7 +57,7 @@ function sanitizeFolderName(name: string): string {
 }
 
 async function directoryExists(
-  parent: FileSystemDirectoryHandle,
+  parent: AppDirectoryHandle,
   name: string,
 ): Promise<boolean> {
   try {
@@ -68,7 +69,7 @@ async function directoryExists(
 }
 
 async function fileExists(
-  dir: FileSystemDirectoryHandle,
+  dir: AppDirectoryHandle,
   name: string,
 ): Promise<boolean> {
   try {
@@ -121,7 +122,7 @@ async function applyMigrations(nameIfNew?: string): Promise<number> {
   return currentVersion;
 }
 
-async function readWorkspaceInfo(dirHandle: FileSystemDirectoryHandle): Promise<WorkspaceInfo> {
+async function readWorkspaceInfo(dirHandle: AppDirectoryHandle): Promise<WorkspaceInfo> {
   const rows = await storageClient.select<{
     name: string;
     created_at: string;
@@ -141,7 +142,7 @@ export const workspaceRepository = {
   /** Creates a new workspace folder (with `papers/`, `exports/`,
    * `settings.json`, and a freshly-migrated `database.sqlite`) inside
    * `parentHandle`, named after `name`. */
-  async create(parentHandle: FileSystemDirectoryHandle, name: string): Promise<WorkspaceInfo> {
+  async create(parentHandle: AppDirectoryHandle, name: string): Promise<WorkspaceInfo> {
     const folderName = sanitizeFolderName(name);
     if (!folderName) {
       throw new Error("Workspace name can't be empty.");
@@ -167,7 +168,7 @@ export const workspaceRepository = {
 
   /** Opens an existing workspace folder, catching its database up to
    * the current schema if it was created by an older app version. */
-  async open(dirHandle: FileSystemDirectoryHandle): Promise<WorkspaceInfo> {
+  async open(dirHandle: AppDirectoryHandle): Promise<WorkspaceInfo> {
     if (!(await fileExists(dirHandle, DB_FILENAME))) {
       throw new Error(
         "That folder doesn't look like a LitReview workspace (no database.sqlite found).",
@@ -185,12 +186,12 @@ export const workspaceRepository = {
    * `database.sqlite`; anything else is silently skipped rather than
    * surfaced as an error — one bad entry shouldn't block the whole
    * launcher list. */
-  async list(root: FileSystemDirectoryHandle): Promise<WorkspaceSummary[]> {
+  async list(root: AppDirectoryHandle): Promise<WorkspaceSummary[]> {
     const summaries: WorkspaceSummary[] = [];
 
     for await (const [, entry] of root.entries()) {
       if (entry.kind !== "directory") continue;
-      const candidate = entry as FileSystemDirectoryHandle;
+      const candidate = entry as AppDirectoryHandle;
       if (!(await fileExists(candidate, DB_FILENAME))) continue;
 
       try {
@@ -219,7 +220,7 @@ export const workspaceRepository = {
    * workspace that happens to reuse the name would inherit a stale
    * directory handle.
    */
-  async remove(root: FileSystemDirectoryHandle, name: string): Promise<void> {
+  async remove(root: AppDirectoryHandle, name: string): Promise<void> {
     if (storageClient.isConnected()) {
       await storageClient.disconnect();
     }
@@ -230,10 +231,18 @@ export const workspaceRepository = {
   },
 
   // Post-Milestone-13 bugfix pass — "Add Paper" remembers the last
-  // folder a PDF was picked from. A `FileSystemDirectoryHandle` can't
+  // folder a PDF was picked from. An `AppDirectoryHandle` can't
   // live in a SQLite TEXT column, so unlike the rest of workspace_meta
   // this is persisted in the browser's handle store instead (see
   // handleStore.ts), keyed by workspace folder name.
+  //
+  // Deliberately still the *real* `FileSystemDirectoryHandle` type,
+  // not the widened `AppDirectoryHandle` the rest of this file uses:
+  // this is purely a `showOpenFilePicker({ startIn })` hint, which
+  // only exists on the real File System Access API — the virtual
+  // filesystem's Firefox/Safari fallback (a plain `<input type=file>`,
+  // see `shared/filePickerFallback.ts`) has no `startIn` concept to
+  // feed at all, so this pair is simply never called on that path.
   async getLastImportDir(workspaceKey: string): Promise<FileSystemDirectoryHandle | null> {
     return getHandle<FileSystemDirectoryHandle>(lastImportDirKey(workspaceKey));
   },

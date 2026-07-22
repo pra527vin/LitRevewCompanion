@@ -5,6 +5,9 @@ import { Paper, Category, MetadataUpdate, DoiMetadata } from "./types";
 // "Add Paper" remembering its last folder is workspace_meta state,
 // which workspace already owns; see workspaceService.getLastImportDir.
 import { workspaceService, WorkspaceInfo } from "../workspace";
+import type { AppFileHandle } from "../../shared/storageHandles";
+import { SUPPORTS_FILE_SYSTEM_ACCESS } from "../../shared/browserSupport";
+import { pickFilesViaInput } from "../../shared/filePickerFallback";
 
 /** A picked-and-hashed PDF that hasn't been written into the workspace
  * yet — held in memory between `prepareImports` (pick + dedupe check)
@@ -68,21 +71,31 @@ export const libraryService = {
    * they're actually written anywhere).
    */
   async prepareImports(workspace: WorkspaceInfo): Promise<PrepareImportsResult> {
-    const lastDir = await workspaceService.getLastImportDir(workspace).catch(() => null);
-
-    let handles: FileSystemFileHandle[];
-    try {
-      handles = await window.showOpenFilePicker({
-        multiple: true,
-        excludeAcceptAllOption: true,
-        types: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }],
-        startIn: lastDir ?? undefined,
-      });
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") {
+    let handles: AppFileHandle[];
+    if (SUPPORTS_FILE_SYSTEM_ACCESS) {
+      const lastDir = await workspaceService.getLastImportDir(workspace).catch(() => null);
+      try {
+        handles = await window.showOpenFilePicker({
+          multiple: true,
+          excludeAcceptAllOption: true,
+          types: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }],
+          startIn: lastDir ?? undefined,
+        });
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") {
+          return { status: "cancelled" };
+        }
+        throw e;
+      }
+    } else {
+      // Picking files from the researcher's real disk to *import* was
+      // never File-System-Access-only — only remembering where to open
+      // the picker next time was (see workspaceService.getLastImportDir's
+      // own doc comment on why that's skipped here entirely).
+      handles = await pickFilesViaInput("application/pdf");
+      if (handles.length === 0) {
         return { status: "cancelled" };
       }
-      throw e;
     }
 
     const pending: PendingImport[] = [];

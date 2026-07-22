@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { workspaceService } from "../service";
 import { WorkspaceInfo, WorkspaceSummary } from "../types";
 import { ConfirmDialog } from "../../../shared/ConfirmDialog";
+import { SUPPORTS_FILE_SYSTEM_ACCESS } from "../../../shared/browserSupport";
+import type { AppDirectoryHandle } from "../../../shared/storageHandles";
 import "./WorkspaceLauncher.css";
 
 export interface WorkspaceLauncherProps {
@@ -31,9 +33,22 @@ export interface WorkspaceLauncherProps {
  * Post-removal-feature pass: each entry in "Your workspaces" now has
  * a "×" button so a workspace created by mistake (or no longer
  * needed) can be removed without leaving the app — see `handleRemove`.
+ *
+ * Cross-browser pass: on browsers without the File System Access API
+ * (`!SUPPORTS_FILE_SYSTEM_ACCESS` — Firefox, Safari),
+ * `workspaceService` transparently swaps in an IndexedDB-backed
+ * virtual root (see `shared/virtualFs.ts`) for every method here — no
+ * picker, no permission prompt, no "choose a folder" step, since none
+ * of that applies to browser-profile storage. This component doesn't
+ * need to know which backend is actually in use for any of that: it
+ * already only ever calls `tryGetWorkspacesRoot`/`pickWorkspacesRoot`/
+ * etc. through `workspaceService`. The one thing that genuinely has no
+ * virtual equivalent — "open a workspace from another location," a
+ * real folder somewhere else on disk — is hidden rather than left
+ * clickable-but-broken; see `SUPPORTS_FILE_SYSTEM_ACCESS` below.
  */
 export function WorkspaceLauncher({ onWorkspaceReady }: WorkspaceLauncherProps) {
-  const [root, setRoot] = useState<FileSystemDirectoryHandle | null>(null);
+  const [root, setRoot] = useState<AppDirectoryHandle | null>(null);
   const [needsRootPrompt, setNeedsRootPrompt] = useState(false);
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
@@ -43,7 +58,7 @@ export function WorkspaceLauncher({ onWorkspaceReady }: WorkspaceLauncherProps) 
   const [error, setError] = useState<string | null>(null);
   const [pendingRemove, setPendingRemove] = useState<WorkspaceSummary | null>(null);
 
-  async function loadWorkspaces(dirHandle: FileSystemDirectoryHandle) {
+  async function loadWorkspaces(dirHandle: AppDirectoryHandle) {
     try {
       const found = await workspaceService.listWorkspaces(dirHandle);
       setWorkspaces(found);
@@ -54,15 +69,6 @@ export function WorkspaceLauncher({ onWorkspaceReady }: WorkspaceLauncherProps) 
   }
 
   useEffect(() => {
-    if (!("showDirectoryPicker" in window)) {
-      setListError(
-        "This browser doesn't support opening folders from a web page. " +
-          "Try Chrome or Edge instead.",
-      );
-      setWorkspaces([]);
-      return;
-    }
-
     let cancelled = false;
     (async () => {
       const stored = await workspaceService.tryGetWorkspacesRoot();
@@ -80,7 +86,10 @@ export function WorkspaceLauncher({ onWorkspaceReady }: WorkspaceLauncherProps) 
   }, []);
 
   /** Only ever called from the button below — `pickWorkspacesRoot`
-   * needs a live user gesture to show a picker or permission prompt. */
+   * needs a live user gesture to show a picker or permission prompt
+   * (on browsers with the real API; the virtual root resolves
+   * immediately regardless, so this still reads as "just works" on
+   * the very first click there too). */
   async function handleChooseRoot() {
     setError(null);
     setBusy(true);
@@ -96,7 +105,7 @@ export function WorkspaceLauncher({ onWorkspaceReady }: WorkspaceLauncherProps) 
     }
   }
 
-  async function handleOpen(dirHandle: FileSystemDirectoryHandle) {
+  async function handleOpen(dirHandle: AppDirectoryHandle) {
     setError(null);
     setBusy(true);
     try {
@@ -170,6 +179,15 @@ export function WorkspaceLauncher({ onWorkspaceReady }: WorkspaceLauncherProps) 
           A deep reading environment for researchers.
         </p>
 
+        {!SUPPORTS_FILE_SYSTEM_ACCESS && (
+          <p className="launcher__hint">
+            This browser doesn't support saving workspaces as real folders on
+            disk, so they're kept in this browser's own storage instead —
+            still private and local-only, just not visible outside the app or
+            portable between browsers/devices the way a real folder is.
+          </p>
+        )}
+
         {needsRootPrompt ? (
           <div className="launcher__section">
             <p className="launcher__status">
@@ -241,20 +259,26 @@ export function WorkspaceLauncher({ onWorkspaceReady }: WorkspaceLauncherProps) 
                   Create
                 </button>
               </div>
-              {root && <p className="launcher__hint">Saved in "{root.name}"</p>}
+              {root && SUPPORTS_FILE_SYSTEM_ACCESS && (
+                <p className="launcher__hint">Saved in "{root.name}"</p>
+              )}
             </div>
 
-            <div className="launcher__divider">
-              <span>or</span>
-            </div>
+            {SUPPORTS_FILE_SYSTEM_ACCESS && (
+              <>
+                <div className="launcher__divider">
+                  <span>or</span>
+                </div>
 
-            <button
-              className="launcher__button launcher__button--secondary"
-              onClick={handleOpenFromPicker}
-              disabled={busy}
-            >
-              Open a workspace from another location…
-            </button>
+                <button
+                  className="launcher__button launcher__button--secondary"
+                  onClick={handleOpenFromPicker}
+                  disabled={busy}
+                >
+                  Open a workspace from another location…
+                </button>
+              </>
+            )}
           </>
         )}
 

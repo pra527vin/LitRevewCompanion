@@ -1,16 +1,16 @@
+import type { AppDirectoryHandle } from "./storageHandles";
+
 /**
- * Writes a file into a workspace's `exports/` folder — the same
- * destination and naming convention `features/export/repository.ts`
- * uses, just generalized to accept binary content (a `Blob`, for the
- * equation PDF/Word exports) alongside plain text. Lives in `shared/`
- * rather than being reused from `features/export` directly: `export`
- * reads from `paper-summary`/`literature-matrix`, which read from
- * `notebook` — so `notebook` importing `features/export` back would
- * be a real circular dependency (see `EquationEditor`'s own doc
- * comment for where this is used).
+ * Writes a file into a workspace's `exports/` folder — the data-access
+ * layer behind `features/export`'s Paper Summary/Literature Matrix/
+ * Bibliography exports. Lives in `shared/` (a dependency-free, plain
+ * function rather than a method on `export`'s own repository) so
+ * anything else that ever needs to drop a file into a workspace's own
+ * `exports/` folder can reuse it without creating a dependency on the
+ * `export` feature itself.
  */
 export async function writeExportFile(
-  dirHandle: FileSystemDirectoryHandle,
+  dirHandle: AppDirectoryHandle,
   workspaceName: string,
   filename: string,
   contents: string | Blob,
