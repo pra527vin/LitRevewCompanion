@@ -1,0 +1,36 @@
+.recent-symbols-bar {
+  margin-top: 10px;
+}
+
+.recent-symbols-bar__label {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.recent-symbols-bar__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.recent-symbols-bar__key {
+  min-width: 32px;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-mono);
+}
+
+.recent-symbols-bar__key:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}

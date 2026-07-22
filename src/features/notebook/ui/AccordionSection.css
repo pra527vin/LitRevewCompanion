@@ -1,0 +1,67 @@
+.accordion-section {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.accordion-section__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 12px 14px;
+  color: var(--text-primary);
+}
+
+.accordion-section__header:hover {
+  background: var(--bg-canvas);
+}
+
+/* Signature detail: a bound-notebook "spine" tick that lights up
+   in the accent color for the section currently open, echoing a
+   physical notebook's ribbon marker. */
+.accordion-section__spine {
+  width: 3px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  flex-shrink: 0;
+  transition: background 150ms ease;
+}
+
+.is-open .accordion-section__spine {
+  background: var(--accent);
+}
+
+.accordion-section__title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.accordion-section__preview {
+  color: var(--text-tertiary);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.accordion-section__chevron {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.accordion-section__body {
+  padding: 4px 14px 16px 27px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}

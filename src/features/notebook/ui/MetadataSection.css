@@ -1,0 +1,108 @@
+.metadata-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metadata-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metadata-form__field span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-tertiary);
+}
+
+.metadata-form__field input,
+.metadata-form__field select {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.metadata-form__field input:focus-visible,
+.metadata-form__field select:focus-visible {
+  border-color: var(--accent);
+}
+
+.metadata-form__doi-row {
+  display: flex;
+  gap: 6px;
+}
+
+.metadata-form__doi-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+}
+
+.metadata-form__doi-row button {
+  flex-shrink: 0;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.metadata-form__doi-row button:not(:disabled):hover {
+  background: var(--accent-hover);
+}
+
+.metadata-form__doi-row button:disabled {
+  opacity: 0.6;
+}
+
+.metadata-form__error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.metadata-form__citation {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.metadata-form__citation-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+
+.metadata-form__citation-preview {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+}
+
+.metadata-form__citation-copy {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.metadata-form__citation-copy:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}

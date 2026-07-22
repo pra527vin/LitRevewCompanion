@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:1420/)",
+      "Bash(npx --yes playwright --version)",
+      "Read(//c/Users/Dell/AppData/Local/**)",
+      "Bash(npx --yes playwright install chromium)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(node screenshot.mjs)",
+      "Bash(cd \"c:\\\\Users\\\\Dell\\\\Downloads\\\\Thesis\\\\pdfreader\" && mkdir -p src/features/workspace/migrations && cp src-tauri/migrations/*.sql src/features/workspace/migrations/ && ls src/features/workspace/migrations/)",
+      "Bash(npx tsc *)",
+      "Bash(node verify.mjs)",
+      "Bash(curl -sv http://localhost:1420/src/features/workspace/repository.ts)",
+      "Bash(tail -80 /tmp/vite-dev.log)",
+      "Read(//tmp/**)",
+      "PowerShell(Stop-Process -Id 60632 -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 1420 -ErrorAction SilentlyContinue)",
+      "Bash(netstat -ano)",
+      "PowerShell(Stop-Process -Id 60884 -Force -ErrorAction SilentlyContinue)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Dell\\Downloads\\Thesis\\pdfreader\\src-tauri\\migrations"
+    ]
+  }
+}

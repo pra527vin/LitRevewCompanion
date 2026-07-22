@@ -1,0 +1,95 @@
+.equation-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  background: var(--bg-canvas);
+}
+
+.equation-card + .equation-card {
+  margin-top: 10px;
+}
+
+.equation-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.equation-card__index {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+}
+
+.equation-card__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.equation-card__edit,
+.equation-card__remove {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 3px 9px;
+  font-size: 11.5px;
+}
+
+.equation-card__edit:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+.equation-card__remove:hover {
+  background: var(--danger-soft-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.equation-card__preview {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: #1a1a1a;
+  padding: 10px;
+}
+
+.equation-card__export {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.equation-card__export-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.equation-card__export-button {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 3px 8px;
+  font-size: 11.5px;
+}
+
+.equation-card__export-button:not(:disabled):hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+.equation-card__export-button:disabled {
+  opacity: 0.5;
+}

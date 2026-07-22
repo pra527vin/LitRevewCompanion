@@ -1,0 +1,24 @@
+# Node
+node_modules
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+coverage
+
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Workspaces (user research data — never committed)
+*.workspace/
+**/database.sqlite
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# OS
+.DS_Store

@@ -1,0 +1,235 @@
+.import-review__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 33, 41, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 110;
+}
+
+.import-review {
+  width: 620px;
+  max-width: calc(100vw - 32px);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.import-review__header {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.import-review__header h2 {
+  font-size: 16px;
+}
+
+.import-review__new-category {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-canvas);
+}
+
+.import-review__label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+}
+
+.import-review__new-category-row {
+  display: flex;
+  gap: 8px;
+}
+
+.import-review__new-category-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 13px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.import-review__new-category-row button {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--accent);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.import-review__new-category-row button:not(:disabled):hover {
+  background: var(--accent-hover);
+}
+
+.import-review__new-category-row button:disabled {
+  opacity: 0.6;
+}
+
+.import-review__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 18px;
+}
+
+.import-review__item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.import-review__item:last-child {
+  border-bottom: none;
+}
+
+.import-review__item-thumb {
+  width: 64px;
+  height: 84px;
+  flex-shrink: 0;
+}
+
+.import-review__item-fields {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  align-content: start;
+}
+
+.import-review__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+
+.import-review__field--title,
+.import-review__field--lookup {
+  grid-column: 1 / -1;
+}
+
+.import-review__field input,
+.import-review__field select {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  font-family: inherit;
+}
+
+.import-review__field input:focus,
+.import-review__field select:focus {
+  border-color: var(--accent);
+}
+
+.import-review__lookup-row {
+  display: flex;
+  gap: 8px;
+}
+
+.import-review__lookup-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  font-family: inherit;
+}
+
+.import-review__lookup-row input:focus {
+  border-color: var(--accent);
+}
+
+.import-review__lookup-row button {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--accent);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.import-review__lookup-row button:not(:disabled):hover {
+  background: var(--accent-hover);
+}
+
+.import-review__lookup-row button:disabled {
+  opacity: 0.6;
+}
+
+.import-review__lookup-status {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--accent);
+}
+
+.import-review__error {
+  margin: 8px 18px 0;
+  color: var(--danger);
+  font-size: 12.5px;
+}
+
+.import-review__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.import-review__cancel,
+.import-review__confirm {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.import-review__cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.import-review__cancel:not(:disabled):hover {
+  background: var(--bg-canvas);
+}
+
+.import-review__confirm {
+  background: var(--accent);
+  color: #fff;
+}
+
+.import-review__confirm:not(:disabled):hover {
+  background: var(--accent-hover);
+}
+
+.import-review__cancel:disabled,
+.import-review__confirm:disabled {
+  opacity: 0.6;
+}

@@ -1,0 +1,127 @@
+.export-panel__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 33, 41, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.export-panel {
+  width: 480px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.export-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.export-panel__header h2 {
+  font-size: 16px;
+}
+
+.export-panel__close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.export-panel__close:hover {
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+}
+
+.export-panel__body {
+  padding: 18px;
+  overflow-y: auto;
+}
+
+.export-panel__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+}
+
+.export-panel__option + .export-panel__option {
+  border-top: 1px solid var(--border);
+}
+
+.export-panel__option-text h3 {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.export-panel__option-text p {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.export-panel__action {
+  flex-shrink: 0;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.export-panel__action:not(:disabled):hover {
+  background: var(--accent-hover);
+}
+
+.export-panel__action:disabled {
+  opacity: 0.5;
+}
+
+.export-panel__result {
+  margin-top: -6px;
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+.export-panel__result--ok {
+  color: var(--accent);
+}
+
+.export-panel__result--error {
+  color: var(--danger);
+}
+
+.export-panel__note {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+
+.export-panel__note code {
+  font-family: var(--font-mono);
+  background: var(--bg-canvas);
+  border-radius: 3px;
+  padding: 1px 4px;
+}

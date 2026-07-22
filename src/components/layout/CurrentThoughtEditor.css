@@ -1,0 +1,67 @@
+.thought-editor__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+}
+
+.thought-editor {
+  position: fixed;
+  right: 12px;
+  bottom: calc(var(--statusbar-h) + 10px);
+  width: 300px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 12px;
+}
+
+.thought-editor__input {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 8px;
+}
+
+.thought-editor__input:focus-visible {
+  border-color: var(--accent);
+}
+
+.thought-editor__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.thought-editor__cancel,
+.thought-editor__save {
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  border: 1px solid transparent;
+}
+
+.thought-editor__cancel {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.thought-editor__cancel:hover {
+  background: var(--bg-canvas);
+}
+
+.thought-editor__save {
+  background: var(--accent);
+  color: #fff;
+}
+
+.thought-editor__save:hover {
+  background: var(--accent-hover);
+}

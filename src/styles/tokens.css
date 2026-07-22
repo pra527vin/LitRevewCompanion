@@ -1,0 +1,103 @@
+/*
+  Design language: "study under library light."
+  Cool, quiet, paper-and-ink palette so the PDF stays the visual
+  focus (per Design_Decisions.md — "PDF should always remain the
+  visual focus"). One warm accent (highlighter gold) is reserved
+  strictly for annotation/highlight affordances so it reads as
+  *the researcher's mark*, not chrome decoration.
+*/
+
+:root {
+  /* Surfaces */
+  --bg-canvas: #eceef0;      /* app background, cool light gray */
+  --bg-surface: #ffffff;     /* cards, notebook sections, reader page */
+  --bg-chrome: #182129;      /* toolbar / status bar, deep ink navy */
+  --bg-chrome-raised: #212c36;
+
+  /* Text */
+  --text-primary: #1b2430;
+  --text-secondary: #5b6472;
+  --text-tertiary: #8a92a0;
+  --text-on-chrome: #eef1f4;
+  --text-on-chrome-dim: #9aa5b1;
+
+  /* Accent — muted pine/teal ink, used sparingly for action & focus */
+  --accent: #3d6b63;
+  --accent-hover: #335850;
+  --accent-soft: #e3ece9;
+  --accent-soft-border: #bfd6cd;
+
+  /* Highlight — reserved for the researcher's own marks (quotes, excerpts) */
+  --highlight: #f3d17a;
+  --highlight-soft: #fbf1d8;
+
+  /* Structure */
+  --border: #d7dbe0;
+  --border-strong: #b9c0c8;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* Status — error/destructive text and its hover-background pairing
+     (delete/remove affordances, failed-lookup messages). One semantic
+     pair instead of the same handful of reds spelled out per file, so
+     dark mode only needs to override them here. */
+  --danger: #b3261e;
+  --danger-soft-bg: #fbeceb;
+
+  /* Type */
+  --font-display: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --font-ui: "IBM Plex Sans", "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Menlo, monospace;
+
+  /* Layout */
+  --toolbar-h: 52px;
+  --statusbar-h: 30px;
+
+  --shadow-sm: 0 1px 2px rgba(24, 33, 41, 0.06);
+  --shadow-md: 0 4px 12px rgba(24, 33, 41, 0.10);
+}
+
+/*
+  Dark palette (Milestone 15 — Appearance). Applied via `data-theme` on
+  <html>, set by features/settings/themeService.ts before first paint
+  (see main.tsx) — "system" resolves to one of these explicitly rather
+  than relying on a `prefers-color-scheme` media query here, so a
+  single source of truth (themeService) governs both the Settings
+  panel's picker and the Toolbar's quick toggle without the two ever
+  disagreeing about which theme is actually active.
+
+  `--bg-chrome`/`--bg-chrome-raised` and the `--text-on-chrome*` pair
+  barely move — the toolbar/status bar were already a deep ink navy in
+  light mode (Design_Decisions.md's "study under library light"), so
+  dark mode mainly brings the canvas/surface/text down to meet it
+  rather than redesigning the chrome too.
+*/
+:root[data-theme="dark"] {
+  --bg-canvas: #14181c;
+  --bg-surface: #1c2126;
+  --bg-chrome: #10151a;
+  --bg-chrome-raised: #1a232c;
+
+  --text-primary: #e7eaee;
+  --text-secondary: #a7b0bb;
+  --text-tertiary: #7c8794;
+  --text-on-chrome: #eef1f4;
+  --text-on-chrome-dim: #9aa5b1;
+
+  --accent: #5b968a;
+  --accent-hover: #6ea89b;
+  --accent-soft: #1e2e2b;
+  --accent-soft-border: #35544c;
+
+  --highlight: #f3d17a;
+  --highlight-soft: #3a331d;
+
+  --border: #2a3138;
+  --border-strong: #3c4650;
+
+  --danger: #e5726b;
+  --danger-soft-bg: #3a2321;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+}

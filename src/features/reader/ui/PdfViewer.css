@@ -1,0 +1,282 @@
+.pdf-viewer {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-canvas);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pdf-viewer__scroll {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  /* Scrolling should only ever repaint this pane, never the notebook,
+     matrix, toolbar, or other panels — contain limits the browser's
+     layout/paint work to this subtree. */
+  contain: layout style;
+}
+
+/* Holds the virtualized page list: top spacer, mounted pages, bottom
+   spacer. Explicit width (set inline from renderWidth) keeps every
+   page and both spacers aligned to the same fit-width column. */
+.pdf-viewer__document {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.pdf-page {
+  position: relative;
+  flex-shrink: 0;
+  /* Must match PAGE_GAP in PdfViewer.tsx's offsets math. */
+  margin-bottom: 24px;
+}
+
+.pdf-page__number {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  user-select: none;
+}
+
+.pdf-page__skeleton {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.pdf-page__canvas {
+  display: block;
+  box-shadow: var(--shadow-md);
+  background: #fff;
+}
+
+/* pdf.js's TextLayer sizes/positions its own spans via
+   calc(var(--scale-factor) * ...) — see renderTextLayer() in
+   src/features/reader/service.ts, which sets --scale-factor on this
+   element. These span rules are the standard pdf.js textLayer
+   conventions, reproduced by hand since we use the core TextLayer API
+   directly rather than pulling in the full pdf_viewer.css bundle. */
+.pdf-page__text-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: 1;
+  text-align: initial;
+  /* Explicit rather than relying on the `auto` default — WebKitGTK
+   * (this app's Linux webview) has been observed to make text-layer
+   * drag-selection noticeably less precise without this set directly
+   * on the selectable layer itself. */
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.pdf-page__text-layer span,
+.pdf-page__text-layer br {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  user-select: text;
+  -webkit-user-select: text;
+  transform-origin: 0% 0%;
+  forced-color-adjust: none;
+}
+
+.pdf-page__text-layer ::selection {
+  background: rgba(243, 209, 122, 0.4);
+}
+
+.pdf-viewer__status {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  align-self: flex-start;
+  margin-top: 40px;
+}
+
+.pdf-viewer__status--error {
+  color: var(--danger);
+}
+
+.pdf-viewer__nav {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-surface);
+  flex-wrap: wrap;
+}
+
+.pdf-viewer__nav-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pdf-viewer__nav button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.pdf-viewer__nav button:not(:disabled):hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+.pdf-viewer__nav button:disabled {
+  opacity: 0.4;
+}
+
+.pdf-viewer__nav-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.pdf-viewer__search-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0 !important;
+}
+
+.pdf-viewer__search-toggle--active {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+.pdf-viewer__page-jump {
+  display: flex;
+  gap: 4px;
+}
+
+.pdf-viewer__page-jump input {
+  width: 52px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 6px;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.pdf-viewer__page-jump input:focus {
+  border-color: var(--accent);
+}
+
+.pdf-viewer__page-jump button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.pdf-viewer__page-jump button:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+.pdf-viewer__zoom-level {
+  font-family: var(--font-mono);
+  min-width: 48px;
+}
+
+/* ---- in-document search ---- */
+
+.pdf-viewer__search {
+  flex-shrink: 0;
+  width: 50%;
+  min-width: 260px;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.pdf-viewer__search-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  font-family: inherit;
+}
+
+.pdf-viewer__search-input:focus {
+  border-color: var(--accent);
+}
+
+.pdf-viewer__search-count {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  min-width: 70px;
+  text-align: center;
+}
+
+.pdf-viewer__search button {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.pdf-viewer__search button:not(:disabled):hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+.pdf-viewer__search button:disabled {
+  opacity: 0.4;
+}
+
+.pdf-viewer__search-close {
+  font-size: 16px !important;
+  line-height: 1;
+  padding: 4px 9px !important;
+}
+
+/* The active search match, wrapped in a <mark> by applyHighlight() in
+   PdfViewer.tsx — sits on top of the (already transparent) text-layer
+   span it was carved out of. */
+.pdf-page__text-layer mark.pdf-search-hit {
+  background: rgba(243, 209, 122, 0.55);
+  color: transparent;
+}

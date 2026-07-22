@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>LitReview UI Wireframe</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f4f4f4}
+.toolbar{height:56px;background:#222;color:#fff;display:flex;align-items:center;padding:0 16px;gap:24px}
+.main{display:flex;height:calc(100vh - 88px)}
+.left{width:60%;background:#fff;border-right:1px solid #ccc;display:flex;align-items:center;justify-content:center;color:#888}
+.right{width:40%;display:flex;flex-direction:column;background:#fafafa}
+.section{border-bottom:1px solid #ddd;padding:14px}
+.expanded{flex:1;overflow:auto}
+.status{height:32px;background:#222;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:0 12px;font-size:13px}
+</style></head>
+<body>
+<div class="toolbar">
+<div>Workspace</div><div>Add Paper</div><div>Search</div><div>Review Matrix</div><div>Export</div><div>Settings</div>
+</div>
+<div class="main">
+<div class="left"><h2>PDF Viewer (60%)</h2></div>
+<div class="right">
+<div class="section">📄 Metadata</div>
+<div class="section expanded">
+<b>▼ Methodology</b><hr>
+Page 17<br>"Difference-in-Differences..."<br><br>
+Your Notes...
+</div>
+<div class="section">▶ Findings</div>
+<div class="section">▶ Limitations</div>
+<div class="section">▶ Relevance to Thesis</div>
+<div class="section">▶ General Notes</div>
+</div>
+</div>
+<div class="status">
+<div>📄 Page 42/118 (36%)</div>
+<div>Selected: 24 words</div>
+<div>💭 Compare with Acemoglu (2022)...</div>
+</div>
+</body></html>

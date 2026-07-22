@@ -1,0 +1,23 @@
+These files existed after Milestone 00/edits and were supposed to be
+deleted in Milestone 06 (migrated into src/features/notebook/ui/), but
+the cleanup was noted here without actually being carried out — they
+were still present as of the Milestone 13 delivery and got removed for
+real during the post-Milestone-13 bugfix pass (see
+docs/milestones/13a-bugfixes.md):
+
+src/components/notebook/AccordionSection.tsx
+src/components/notebook/AccordionSection.css
+src/components/notebook/Notebook.tsx
+src/components/notebook/Notebook.css
+
+The same thing had happened to the reader/ skeleton from Milestone 04
+(migrated into src/features/reader/ui/ but never deleted from
+src/components/):
+
+src/components/reader/PdfViewer.tsx
+src/components/reader/PdfViewer.css
+
+Both directories are now gone (`git status`/zip diff should show them
+removed, not just empty). After this, src/components/ contains only
+layout/ (Toolbar, MainLayout, StatusBar) — everything else has
+migrated into features/.

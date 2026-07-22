@@ -1,0 +1,110 @@
+@import "./tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  /* Defensive, in addition to .app-shell's own overflow:hidden below
+   * — a nested panel (Notebook, in practice) briefly exceeding its
+   * flex-computed height during a re-render is enough for the
+   * *document* itself to become scrollable, which then hijacks
+   * scrolling anywhere on the page, not just over that panel, since
+   * a wheel event that isn't consumed by a closer scroll container
+   * bubbles all the way up to the window. Locking html/body themselves
+   * removes that escape hatch regardless of what happens further down
+   * the tree. */
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--highlight-soft);
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Shown only for the mount-time auto-restore attempt (see App.tsx's
+   `restoring` state) — brief enough in practice (a silent permission
+   check plus one directory lookup) that this is deliberately plain
+   text, not a spinner. */
+.app-restoring {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+/* Holds the Library sidebar + MainLayout side by side, beneath the
+   Toolbar and above the StatusBar — takes over the "fill remaining
+   height" role .main-layout used to have directly against .app-shell
+   (its own flex:1 now applies one level down, against this row
+   instead, which works the same way regardless of which axis the
+   parent flexes on). */
+.app-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.app-body__sidebar-reopen {
+  flex-shrink: 0;
+  width: 18px;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-tertiary);
+  font-size: 15px;
+}
+
+.app-body__sidebar-reopen:hover {
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

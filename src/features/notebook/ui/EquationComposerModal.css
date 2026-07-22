@@ -1,0 +1,166 @@
+.equation-composer__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 33, 41, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 520;
+}
+
+.equation-composer {
+  width: 860px;
+  max-width: calc(100vw - 32px);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.equation-composer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.equation-composer__header h3 {
+  font-size: 15px;
+}
+
+.equation-composer__close {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.equation-composer__close:hover {
+  color: var(--text-primary);
+}
+
+.equation-composer__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 18px;
+  overflow-y: auto;
+}
+
+.equation-composer__editor-column {
+  flex: 1 1 380px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.equation-composer__symbols-column {
+  flex: 1 1 340px;
+  min-width: 300px;
+  display: flex;
+}
+
+.equation-composer__symbols-column .equation-symbol-picker {
+  flex: 1;
+}
+
+.equation-composer__label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-tertiary);
+  margin: 10px 0 4px;
+}
+
+.equation-composer__label:first-child {
+  margin-top: 0;
+}
+
+.equation-composer__input {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 10px;
+}
+
+.equation-composer__input:focus-visible {
+  border-color: var(--accent);
+}
+
+.equation-composer__preview {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: #1a1a1a;
+  padding: 12px;
+}
+
+.equation-composer__preview--empty {
+  color: var(--text-tertiary);
+  font-size: 12.5px;
+  font-family: var(--font-ui);
+  font-style: italic;
+}
+
+.equation-composer__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.equation-composer__cancel,
+.equation-composer__save {
+  border-radius: var(--radius-sm);
+  padding: 7px 16px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+}
+
+.equation-composer__cancel {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.equation-composer__cancel:hover {
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+}
+
+.equation-composer__save {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.equation-composer__save:hover {
+  background: var(--accent-hover);
+}
+
+@media (max-width: 700px) {
+  .equation-composer__symbols-column {
+    min-height: 260px;
+  }
+}
