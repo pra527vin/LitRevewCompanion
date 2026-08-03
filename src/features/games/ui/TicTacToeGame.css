@@ -1,0 +1,249 @@
+/* The two mark colours are the one thing here not taken from the
+   app's token set — X and O need to stay distinguishable from each
+   other and from the accent, so they're their own pair, with a
+   lightened variant for dark mode. */
+.ttt {
+  --ttt-x: #c8442a;
+  --ttt-o: #2f6d5f;
+  --ttt-x-soft: rgba(200, 68, 42, 0.1);
+  --ttt-o-soft: rgba(47, 109, 95, 0.12);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+:root[data-theme="dark"] .ttt {
+  --ttt-x: #ef7a5f;
+  --ttt-o: #6ab7a2;
+  --ttt-x-soft: rgba(239, 122, 95, 0.14);
+  --ttt-o-soft: rgba(106, 183, 162, 0.14);
+}
+
+/* Scoreboard */
+
+.ttt__scoreboard {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.ttt__score {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: transparent;
+  transition: background 220ms ease;
+}
+
+.ttt__score--active-x {
+  background: var(--ttt-x-soft);
+}
+
+.ttt__score--active-o {
+  background: var(--ttt-o-soft);
+}
+
+.ttt__score-divider {
+  width: 1px;
+  background: var(--border);
+}
+
+.ttt__score-glyph {
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.ttt__score-glyph--x {
+  color: var(--ttt-x);
+}
+
+.ttt__score-glyph--o {
+  color: var(--ttt-o);
+}
+
+.ttt__score-name {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.ttt__score-value {
+  font-weight: 700;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+/* Board */
+
+.ttt__board-frame {
+  padding: 18px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 26px;
+}
+
+.ttt__board {
+  display: grid;
+  grid-template-columns: repeat(3, 96px);
+  grid-template-rows: repeat(3, 96px);
+  gap: 8px;
+}
+
+.ttt__cell {
+  position: relative;
+  border: none;
+  padding: 0;
+  margin: 0;
+  border-radius: 16px;
+  background: var(--bg-canvas);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 160ms ease, transform 120ms ease;
+}
+
+.ttt__cell:not(:disabled):hover {
+  background: var(--accent-soft);
+}
+
+.ttt__cell:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* A filled square is `disabled` so it can't be replayed — but it
+   should still look like part of the board, not like a greyed-out
+   control. */
+.ttt__cell:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.ttt__cell--win {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.ttt__mark {
+  font-family: var(--font-display);
+  font-size: 58px;
+  line-height: 1;
+}
+
+.ttt__mark--x {
+  color: var(--ttt-x);
+}
+
+.ttt__mark--o {
+  color: var(--ttt-o);
+}
+
+.ttt__mark--placed {
+  animation: ttt-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* The hover preview of the mark you'd place. */
+.ttt__mark--ghost {
+  opacity: 0.22;
+}
+
+@keyframes ttt-pop {
+  0% {
+    transform: scale(0.4) rotate(-8deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12) rotate(2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ttt__mark--placed {
+    animation: none;
+  }
+}
+
+/* Status + controls */
+
+.ttt__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  /* Reserves the status line's height so the buttons don't shift as
+     the message changes length between turns. */
+  min-height: 84px;
+}
+
+.ttt__status {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-style: italic;
+  color: var(--text-primary);
+}
+
+.ttt__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.ttt__button {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 11px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.ttt__button:hover {
+  background: var(--bg-canvas);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ttt__button--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.ttt__button--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .ttt__board {
+    grid-template-columns: repeat(3, 78px);
+    grid-template-rows: repeat(3, 78px);
+  }
+
+  .ttt__mark {
+    font-size: 46px;
+  }
+}

@@ -55,6 +55,14 @@ export interface Paper {
   // null both when uncategorized and when a query didn't join it in
   // (e.g. `findByHash`'s dedup check has no reason to).
   categoryName: string | null;
+  // Aggregated in from `paper_tags`/`tags` by a separate query, not a
+  // papers column — see `tagRepository.listAllAssignments`. Empty
+  // (not necessarily populated) on queries that don't bother, like
+  // `findByHash`'s dedup check.
+  tags: Tag[];
+  // Manual drag-to-reorder position (Library sidebar's "Custom order"
+  // sort) — null until a paper's been dragged at least once.
+  sortOrder: number | null;
 }
 
 // A fixed, user-managed list (Milestone 14b — Categorization) —
@@ -66,6 +74,22 @@ export interface Category {
   name: string;
   createdAt: string;
 }
+
+// Free-form markers a paper can carry any number of — unlike
+// `Category`, there's no one-per-paper limit. Created on first use
+// (same getOrCreate pattern as categories) via the Library sidebar's
+// per-row tag popover or its bulk "Tag Selected" action.
+export interface Tag {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+// Quick-toggle tags the Library sidebar always offers first (ahead of
+// any custom ones) — plain tags mechanically, just conventional names
+// the UI gives a dedicated star/check button.
+export const IMPORTANT_TAG_NAME = "Important";
+export const READ_TAG_NAME = "Read";
 
 // Raw row shape as it comes back from SQLite — snake_case columns,
 // `authors` stored as a JSON array string.
@@ -87,6 +111,7 @@ export interface PaperRow {
   // Only present on queries that LEFT JOIN categories (listAll/search)
   // — absent (not just null) on a plain `SELECT * FROM papers`.
   category_name?: string | null;
+  sort_order: number | null;
 }
 
 export function fromRow(row: PaperRow): Paper {
@@ -106,6 +131,8 @@ export function fromRow(row: PaperRow): Paper {
     lastOpenedAt: row.last_opened_at,
     categoryId: row.category_id,
     categoryName: row.category_name ?? null,
+    tags: [],
+    sortOrder: row.sort_order,
   };
 }
 

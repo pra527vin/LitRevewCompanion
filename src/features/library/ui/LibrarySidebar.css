@@ -92,9 +92,13 @@
   opacity: 0.6;
 }
 
-.library-sidebar__category-filter {
-  flex: 1;
-  min-width: 0;
+/* Each of the Advanced panel's three selects wants at least 130px —
+   below that a label like "Sort: Recently added" just clips into
+   illegibility, so they wrap onto their own line at a narrow sidebar
+   width instead of all three squeezing down to nothing. */
+.library-sidebar__toolbar-select {
+  flex: 1 1 130px;
+  min-width: 130px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 6px 7px;
@@ -104,13 +108,83 @@
   font-family: inherit;
 }
 
-.library-sidebar__category-filter:focus {
+.library-sidebar__toolbar-select:focus {
   border-color: var(--accent);
+}
+
+.library-sidebar__search {
+  position: relative;
+  flex: 1;
+  min-width: 90px;
+  display: flex;
+  align-items: center;
+}
+
+.library-sidebar__search-icon {
+  position: absolute;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.library-sidebar__search-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px 6px 27px;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  font-family: inherit;
+}
+
+.library-sidebar__search-input:focus {
+  border-color: var(--accent);
+}
+
+.library-sidebar__advanced-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.library-sidebar__advanced-toggle:hover {
+  background: var(--bg-canvas);
+}
+
+.library-sidebar__advanced-toggle--active {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+/* Revealed by the "Advanced" toggle — the category/tag/sort dropdowns
+   that used to sit in the toolbar permanently, now opt-in so the
+   default toolbar reads as "search first." */
+.library-sidebar__advanced-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-canvas);
+  flex-shrink: 0;
 }
 
 /* Shown only while at least one row is checked — replaces the normal
    toolbar's role until the selection is cleared or acted on. */
 .library-sidebar__selection-bar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -174,6 +248,7 @@
 }
 
 .library-sidebar__row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -184,9 +259,29 @@
   background: var(--accent-soft);
 }
 
+/* HTML5 drag-and-drop feedback — the row being dragged fades, the row
+   it's currently hovering over gets a top-edge highlight showing
+   where it'll land on drop. */
+.library-sidebar__row--dragging {
+  opacity: 0.5;
+}
+
+.library-sidebar__row--drag-over {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.library-sidebar__row-drag-handle {
+  flex-shrink: 0;
+  margin-left: 6px;
+  width: 12px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  cursor: grab;
+}
+
 .library-sidebar__row-checkbox {
   flex-shrink: 0;
-  margin-left: 12px;
   width: 14px;
   height: 14px;
   accent-color: var(--accent);
@@ -255,20 +350,209 @@
   border-color: var(--accent);
 }
 
-.library-sidebar__row-delete {
+.library-sidebar__row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Wraps the row's "⋮" trigger plus whichever popover it opens (the
+   context menu, or — once "Tags" is picked from it — the tag
+   popover), so both anchor to the same spot regardless of which is
+   showing. */
+.library-sidebar__row-actions {
+  position: relative;
   flex-shrink: 0;
-  width: 32px;
-  background: transparent;
-  border: none;
-  color: var(--text-tertiary);
-  font-size: 16px;
-  line-height: 1;
   margin-right: 4px;
 }
 
-.library-sidebar__row-delete:hover {
-  background: var(--danger-soft-bg);
+.library-sidebar__row-menu-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+}
+
+.library-sidebar__row-menu-btn:hover {
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+}
+
+/* Anchored under a row's "⋮" button. */
+.library-sidebar__context-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  padding: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.library-sidebar__context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  padding: 7px 9px;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.library-sidebar__context-menu-item:hover {
+  background: var(--bg-canvas);
+}
+
+.library-sidebar__context-menu-item--danger {
   color: var(--danger);
+}
+
+.library-sidebar__context-menu-item--danger:hover {
+  background: var(--danger-soft-bg);
+}
+
+.library-sidebar__context-menu-icon {
+  flex-shrink: 0;
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tag chip — shown read-only under a row's title/meta, and as a
+   clickable option ("--pickable") inside a tag popover, where
+   "--active" marks one already assigned to the paper(s) in play. */
+.library-sidebar__tag-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-canvas);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-family: var(--font-ui);
+  padding: 2px 8px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.library-sidebar__tag-chip--important {
+  border-color: #d9a441;
+  color: #9a6b12;
+  background: rgba(217, 164, 65, 0.14);
+}
+
+.library-sidebar__tag-chip--read {
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.library-sidebar__tag-chip--pickable {
+  cursor: pointer;
+}
+
+.library-sidebar__tag-chip--pickable:hover {
+  background: var(--bg-surface);
+  border-color: var(--accent);
+}
+
+.library-sidebar__tag-chip--active {
+  box-shadow: 0 0 0 1.5px var(--accent) inset;
+}
+
+/* Anchored under whichever row's (or the selection bar's) tag menu
+   item opened it. */
+.library-sidebar__tag-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.library-sidebar__tag-popover--bulk {
+  right: 14px;
+}
+
+.library-sidebar__tag-popover-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.library-sidebar__tag-popover-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.library-sidebar__tag-popover-empty {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.library-sidebar__tag-popover-form {
+  display: flex;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.library-sidebar__tag-popover-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 7px;
+  font-size: 11.5px;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: inherit;
+}
+
+.library-sidebar__tag-popover-input:focus {
+  border-color: var(--accent);
+}
+
+.library-sidebar__tag-popover-form button[type="submit"] {
+  flex-shrink: 0;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.library-sidebar__tag-popover-form button[type="submit"]:disabled {
+  opacity: 0.5;
 }
 
 .library-sidebar__resize {

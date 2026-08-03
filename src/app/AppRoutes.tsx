@@ -9,7 +9,9 @@ import { LibrarySidebar } from "../features/library";
 import { PaperSummaryView } from "../features/paper-summary";
 import { SynthesisView } from "../features/synthesis";
 import { LiteratureMatrixView } from "../features/literature-matrix";
-import { SearchPanel } from "../features/search";
+import { DashboardView } from "../features/dashboard";
+import { BreakReminderProvider } from "../features/break-scheduler";
+import { RefreshmentPage } from "../features/games";
 import { ExportPanel } from "../features/export";
 import { SettingsPage } from "../features/settings";
 import { listRecentlyStudied, RecentlyStudiedEntry } from "../features/reader";
@@ -27,17 +29,20 @@ import { useAppState } from "./AppStateContext";
  * The reader itself is `/reader` now (it used to be `/`, before `/`
  * became the permanent launcher) — opening or auto-restoring a
  * workspace navigates there, not to `/`. `/reader`, `/library`,
- * `/summary`, `/synthesis`, `/matrix`, `/search`, `/export` all render
- * the *same* `ReaderRoute` element on purpose (not seven separate
+ * `/summary`, `/synthesis`, `/matrix`, `/export` all render the
+ * *same* `ReaderRoute` element on purpose (not six separate
  * components) — React reconciles repeated renders of the same
  * component type at the same tree position without unmounting, so
  * switching between these (e.g. opening the Literature Matrix while a
  * paper is open) never remounts `MainLayout`/`PdfViewer` underneath,
  * exactly like the old boolean-flag overlays never did. `ReaderRoute`
  * itself reads `useLocation()` to decide which overlay (if any) to
- * render on top of the reader. Settings gets its own route/component
- * since it genuinely replaces the reader entirely, same as it always
- * has.
+ * render on top of the reader. Settings and Dashboard each get their
+ * own route/component instead, since both genuinely replace the
+ * reader entirely rather than overlaying it — Dashboard used to be one
+ * of the shared-`ReaderRoute` overlays, but a page built around a full
+ * documents table reads as its own destination, not something layered
+ * on top of the PDF view.
  */
 export function AppRoutes() {
   return (
@@ -49,8 +54,9 @@ export function AppRoutes() {
         <Route path="/summary" element={<ReaderRoute />} />
         <Route path="/synthesis" element={<ReaderRoute />} />
         <Route path="/matrix" element={<ReaderRoute />} />
-        <Route path="/search" element={<ReaderRoute />} />
         <Route path="/export" element={<ReaderRoute />} />
+        <Route path="/dashboard" element={<DashboardRoute />} />
+        <Route path="/refreshment" element={<RefreshmentRoute />} />
         <Route path="/settings" element={<SettingsRoute />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -61,7 +67,10 @@ export function AppRoutes() {
 /** The one public route, and always what `/` shows — no redirect-away
  * even if a workspace is already active (restored in the background,
  * or left over from earlier in the session). Picking a workspace here
- * is what actually navigates into the app, at `/reader`. */
+ * is what actually navigates into the app, at `/dashboard` — the
+ * Progress page is the landing view, so opening a workspace starts
+ * with "here's where your reading stands" rather than dropping
+ * straight into the reader/library. */
 function LauncherRoute() {
   const { activateWorkspace } = useAppState();
   const navigate = useNavigate();
@@ -73,7 +82,7 @@ function LauncherRoute() {
           // Best-effort, same rationale as activateWorkspace's own
           // internal try/catch.
         });
-        navigate("/reader");
+        navigate("/dashboard");
       }}
     />
   );
@@ -127,33 +136,46 @@ function PrivateLayout() {
       navigate("/matrix");
       return;
     }
-    if (action === "search") {
-      navigate("/search");
+    if (action === "dashboard") {
+      navigate("/dashboard");
       return;
     }
     if (action === "export") {
       navigate("/export");
       return;
     }
+    if (action === "refreshment") {
+      // Toggles, same as Settings — clicking "Refreshment" again from
+      // inside it goes back to the reader.
+      navigate(location.pathname === "/refreshment" ? "/reader" : "/refreshment");
+      return;
+    }
   }
 
   return (
-    <div className="app-shell">
-      <Toolbar
-        workspaceName={workspace.name}
-        onAction={handleToolbarAction}
-        resolvedTheme={resolvedTheme}
-        onToggleTheme={handleToggleTheme}
-      />
-      <Outlet />
-      {thoughtEditorOpen && (
-        <CurrentThoughtEditor
-          initialValue={currentThought}
-          onSave={handleSaveThought}
-          onCancel={() => setThoughtEditorOpen(false)}
+    // BreakReminderProvider wraps the whole shell (not any one route)
+    // so the reminder cycle keeps running across navigation and its
+    // popup can appear over whatever page is showing — see its own
+    // doc comment. `<Outlet />` sits inside it, which is also what
+    // lets the scheduler page reach `preview`.
+    <BreakReminderProvider>
+      <div className="app-shell">
+        <Toolbar
+          workspaceName={workspace.name}
+          onAction={handleToolbarAction}
+          resolvedTheme={resolvedTheme}
+          onToggleTheme={handleToggleTheme}
         />
-      )}
-    </div>
+        <Outlet />
+        {thoughtEditorOpen && (
+          <CurrentThoughtEditor
+            initialValue={currentThought}
+            onSave={handleSaveThought}
+            onCancel={() => setThoughtEditorOpen(false)}
+          />
+        )}
+      </div>
+    </BreakReminderProvider>
   );
 }
 
@@ -309,20 +331,21 @@ function ReaderRoute() {
           }}
         />
       )}
-      {location.pathname === "/search" && (
-        <SearchPanel
-          onClose={() => navigate("/reader")}
-          onOpenPaper={(paper) => {
-            navigate("/reader");
-            handleOpenPaper(paper);
-          }}
-        />
-      )}
       {location.pathname === "/export" && (
         <ExportPanel workspace={ws} activePaper={activePaper} onClose={() => navigate("/reader")} />
       )}
     </>
   );
+}
+
+/** A full page, same as Settings and Progress — the games grid, for
+ * spending the break the scheduler (Settings → Break Reminders) keeps
+ * nudging you into. Note the scheduler itself is *not* here: its
+ * timers live in `PrivateLayout`'s `BreakReminderProvider` so they run
+ * regardless of which page is open. */
+function RefreshmentRoute() {
+  const navigate = useNavigate();
+  return <RefreshmentPage onClose={() => navigate("/reader")} />;
 }
 
 function SettingsRoute() {
@@ -334,6 +357,28 @@ function SettingsRoute() {
       themePreference={themePreference}
       onThemeChange={handleThemeChange}
       onClose={() => navigate("/reader")}
+    />
+  );
+}
+
+/** A full page, not an overlay atop the reader — see this file's own
+ * doc comment on why Dashboard was pulled out of the shared
+ * `ReaderRoute` list. `workspace` is guaranteed non-null here for the
+ * same reason `ReaderRoute` can assume it: `PrivateLayout` (this
+ * route's parent) already redirected to `/` otherwise. */
+function DashboardRoute() {
+  const { workspace, handleOpenPaper, handlePaperDeleted } = useAppState();
+  const navigate = useNavigate();
+
+  return (
+    <DashboardView
+      workspace={workspace!}
+      onClose={() => navigate("/reader")}
+      onPaperDeleted={handlePaperDeleted}
+      onOpenPaper={(paper) => {
+        navigate("/reader");
+        handleOpenPaper(paper);
+      }}
     />
   );
 }

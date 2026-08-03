@@ -1,6 +1,7 @@
 import { paperRepository } from "./repository";
 import { categoryRepository } from "./categoryRepository";
-import { Paper, Category, MetadataUpdate, DoiMetadata } from "./types";
+import { tagRepository } from "./tagRepository";
+import { Paper, Category, Tag, MetadataUpdate, DoiMetadata } from "./types";
 // One-way dependency on workspace (workspace doesn't import library) —
 // "Add Paper" remembering its last folder is workspace_meta state,
 // which workspace already owns; see workspaceService.getLastImportDir.
@@ -163,6 +164,8 @@ export const libraryService = {
         lastOpenedAt: null,
         categoryId: entry.categoryId,
         categoryName: null,
+        tags: [],
+        sortOrder: null,
       };
 
       await paperRepository.insert(paper);
@@ -248,6 +251,53 @@ export const libraryService = {
     await paperRepository.updateCategory(paperId, categoryId);
   },
 
+  /** Persists a manual drag-to-reorder — see `paperRepository.reorder`. */
+  async reorderPapers(paperIdsInOrder: string[]): Promise<void> {
+    await paperRepository.reorder(paperIdsInOrder);
+  },
+
+  /** Every tag defined in this workspace — the Library sidebar's tag
+   * popover offers these plus a "new tag" input, and Settings' Tags
+   * section lists/manages the same set. */
+  async listTags(): Promise<Tag[]> {
+    return tagRepository.listAll();
+  },
+
+  /** Creates a tag by name (or returns the existing one), without
+   * assigning it to any paper yet — Settings' "add a tag" input,
+   * where there's no paper in scope. */
+  async createTag(name: string): Promise<Tag> {
+    return tagRepository.getOrCreate(name);
+  },
+
+  /** Renames a tag — Settings' "click to rename" action. Every paper
+   * carrying it picks up the new name automatically. */
+  async renameTag(id: string, name: string): Promise<Tag> {
+    return tagRepository.rename(id, name);
+  },
+
+  /** Deletes a tag outright — Settings' "×" action. Papers carrying it
+   * just lose that one marker, nothing else about them changes. */
+  async deleteTag(id: string): Promise<void> {
+    return tagRepository.remove(id);
+  },
+
+  /** Assigns a tag to a paper, creating the tag by name the first
+   * time it's used — the tag popover's chips and "new tag" input, and
+   * the bulk "Tag Selected" action, all call this. */
+  async addTagToPaper(paperId: string, tagName: string): Promise<Tag> {
+    const tag = await tagRepository.getOrCreate(tagName);
+    await tagRepository.addToPaper(paperId, tag.id);
+    return tag;
+  },
+
+  /** Unassigns a tag from a paper — the tag itself still exists for
+   * other papers (or to be picked again on this one) unless removed
+   * separately. */
+  async removeTagFromPaper(paperId: string, tagId: string): Promise<void> {
+    await tagRepository.removeFromPaper(paperId, tagId);
+  },
+
   /**
    * Saves a rendered thumbnail (see `../../shared/pdfThumbnail`'s
    * `renderThumbnail`, called from the UI layer — this feature has no
@@ -288,6 +338,18 @@ export const libraryService = {
     const fileHandle = await papersDir.getFileHandle(fileName);
     const file = await fileHandle.getFile();
     return file.arrayBuffer();
+  },
+
+  /** A cataloged paper's PDF as a `File` — what the Library sidebar's
+   * download button hands to `downloadBlob` to save a copy onto the
+   * researcher's real disk. Works the same on both storage backends
+   * (real File System Access API or the Firefox/Safari IndexedDB
+   * virtual filesystem), since both just need to produce a `File`. */
+  async getPaperFile(workspace: WorkspaceInfo, paper: Paper): Promise<File> {
+    const papersDir = await workspace.dirHandle.getDirectoryHandle("papers");
+    const fileName = paper.filePath.split("/").pop() ?? `${paper.fileHash}.pdf`;
+    const fileHandle = await papersDir.getFileHandle(fileName);
+    return fileHandle.getFile();
   },
 
   /**

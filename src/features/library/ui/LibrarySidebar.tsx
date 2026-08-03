@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { libraryService, PendingImport, ImportReviewEntry } from "../service";
-import { Paper, Category } from "../types";
+import { Paper, Category, Tag, IMPORTANT_TAG_NAME, READ_TAG_NAME } from "../types";
 import type { WorkspaceInfo } from "../../workspace";
 import { ConfirmDialog } from "../../../shared/ConfirmDialog";
+import { downloadBlob } from "../../../shared/downloadFile";
 import { ImportReviewDialog } from "./ImportReviewDialog";
 import { PaperThumbnail } from "./PaperThumbnail";
+import { MoreIcon, DownloadIcon, TagIcon, TrashIcon, SearchIcon, SlidersIcon } from "./icons";
 import "./LibrarySidebar.css";
 
 export interface LibrarySidebarProps {
@@ -51,6 +53,79 @@ function duplicatesMessage(duplicates: Paper[]): string | null {
   return `${duplicates.length} were already in your library.`;
 }
 
+type SortOption = "recent" | "title" | "year" | "lastStudied" | "custom";
+
+/** Compares two possibly-null numbers, always sorting `null` last
+ * regardless of direction — used instead of `?? Infinity`/`?? -Infinity`
+ * substitutions, which silently produce `NaN` (an invalid comparator
+ * result) whenever *both* sides are null, since `Infinity - Infinity`
+ * and `-Infinity - (-Infinity)` both equal `NaN`. That's not a corner
+ * case here: most papers have no year yet, are never opened, or have
+ * never been dragged, so ties on null were the common case, not the
+ * rare one — every one of "Year", "Last studied", and "Custom order"
+ * was sorting close to arbitrarily. */
+function compareNullableDesc(a: number | null, b: number | null): number {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return b - a;
+}
+
+function sortPapers(papers: Paper[], sortBy: SortOption): Paper[] {
+  const sorted = [...papers];
+  switch (sortBy) {
+    case "title":
+      sorted.sort((a, b) => (a.title || a.filePath).localeCompare(b.title || b.filePath));
+      break;
+    case "year":
+      sorted.sort((a, b) => compareNullableDesc(a.year, b.year));
+      break;
+    case "lastStudied":
+      sorted.sort((a, b) =>
+        compareNullableDesc(
+          a.lastOpenedAt ? Date.parse(a.lastOpenedAt) : null,
+          b.lastOpenedAt ? Date.parse(b.lastOpenedAt) : null,
+        ),
+      );
+      break;
+    case "custom":
+      // Never-dragged papers (sortOrder null) sort to the end, in
+      // whatever order they arrived in (Array#sort is stable, so that
+      // stays "most recently added first" — the same order `papers`
+      // itself loads in). Ascending, unlike the other two — a lower
+      // sortOrder is earlier in the list — so this can't reuse
+      // compareNullableDesc as-is.
+      sorted.sort((a, b) => {
+        if (a.sortOrder === null && b.sortOrder === null) return 0;
+        if (a.sortOrder === null) return 1;
+        if (b.sortOrder === null) return -1;
+        return a.sortOrder - b.sortOrder;
+      });
+      break;
+    case "recent":
+    default:
+      sorted.sort((a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt));
+  }
+  return sorted;
+}
+
+/** A filesystem-safe download filename derived from a paper's title
+ * (falling back to its stored filename) — the researcher's own title
+ * edits, not the content-hashed name it's actually stored under. */
+function downloadFilename(paper: Paper): string {
+  const base = (paper.title || paper.filePath.split("/").pop() || "paper")
+    .replace(/[\\/:*?"<>|]+/g, "_")
+    .trim();
+  return `${base || "paper"}.pdf`;
+}
+
+/** A brief pause between programmatically-triggered downloads —
+ * browsers (Chrome especially) can silently block a burst of
+ * auto-triggered downloads fired with no gap between them. */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * The library, docked as a resizable left sidebar rather than a modal
  * over the reader (Milestone 16 — Library Sidebar) — so browsing/
@@ -61,12 +136,15 @@ function duplicatesMessage(duplicates: Paper[]): string | null {
  * drag handle on the right edge, thumbnails per row).
  *
  * Post-Milestone-16 pass: multi-select + "Delete Selected" for
- * removing several papers in one go; the category filter dropdown now
- * always shows (even with zero categories defined, so "No category"
- * is still reachable and the feature is discoverable from day one);
- * and every row gets its own category picker, so a paper can be filed
- * — or refiled — after import, not only during the "Add Paper" review
- * step.
+ * removing several papers in one go, and every row gets its own
+ * category picker, so a paper can be filed — or refiled — after
+ * import, not only during the "Add Paper" review step.
+ *
+ * Search pass: the toolbar's always-visible category/tag/sort
+ * dropdowns were replaced with one search box (matches title,
+ * category, and tag names at once) plus an "Advanced" toggle that
+ * reveals those same three dropdowns for combining a precise
+ * category + tag + sort filter alongside the free-text search.
  */
 export function LibrarySidebar({
   workspace,
@@ -79,8 +157,19 @@ export function LibrarySidebar({
 }: LibrarySidebarProps) {
   const [papers, setPapers] = useState<Paper[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  // The main search box — matches title, category name, and tag
+  // names at once. "" = no text filter.
+  const [searchQuery, setSearchQuery] = useState("");
+  // Advanced panel — the old always-visible category/tag/sort
+  // dropdowns, now tucked behind a toggle so the default toolbar is
+  // just "Add Paper…" + search.
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   // "" = all papers, "__none__" = uncategorized only, else a category id.
   const [categoryFilter, setCategoryFilter] = useState("");
+  // Same convention as categoryFilter, but "__none__" means "no tags at all".
+  const [tagFilter, setTagFilter] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -91,6 +180,16 @@ export function LibrarySidebar({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDownloading, setBulkDownloading] = useState(false);
+  const [bulkTagOpen, setBulkTagOpen] = useState(false);
+  const [bulkNewTagName, setBulkNewTagName] = useState("");
+
+  const [tagPopoverFor, setTagPopoverFor] = useState<string | null>(null);
+  const [newTagName, setNewTagName] = useState("");
+  const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const [reviewState, setReviewState] = useState<ReviewState | null>(null);
   const [reviewCategories, setReviewCategories] = useState<Category[]>([]);
@@ -100,22 +199,46 @@ export function LibrarySidebar({
   async function refresh() {
     setLoading(true);
     try {
-      const [allPapers, allCategories] = await Promise.all([
+      const [allPapers, allCategories, allTags] = await Promise.all([
         libraryService.listPapers(),
         libraryService.listCategories(),
+        libraryService.listTags(),
       ]);
       setPapers(allPapers);
       setCategories(allCategories);
+      setTags(allTags);
     } finally {
       setLoading(false);
     }
   }
 
+  const searchTerm = searchQuery.trim().toLowerCase();
   const filteredPapers = papers.filter((p) => {
-    if (!categoryFilter) return true;
-    if (categoryFilter === "__none__") return p.categoryId === null;
-    return p.categoryId === categoryFilter;
+    if (categoryFilter) {
+      const matchesCategory =
+        categoryFilter === "__none__" ? p.categoryId === null : p.categoryId === categoryFilter;
+      if (!matchesCategory) return false;
+    }
+    if (tagFilter) {
+      const matchesTag =
+        tagFilter === "__none__" ? p.tags.length === 0 : p.tags.some((t) => t.id === tagFilter);
+      if (!matchesTag) return false;
+    }
+    if (searchTerm) {
+      const haystack = [p.title, p.filePath, p.categoryName, ...p.tags.map((t) => t.name)]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(searchTerm)) return false;
+    }
+    return true;
   });
+  // Search/filter narrow which papers show; sortBy still governs the
+  // order they show in.
+  const sortedPapers = sortPapers(filteredPapers, sortBy);
+  // Custom tags offered in the popover, ahead of which Important/Read
+  // already get their own dedicated quick-toggle chips.
+  const otherTags = tags.filter((t) => t.name !== IMPORTANT_TAG_NAME && t.name !== READ_TAG_NAME);
 
   useEffect(() => {
     refresh();
@@ -132,7 +255,23 @@ export function LibrarySidebar({
       return next.size === prev.size ? prev : next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [papers, categoryFilter]);
+  }, [papers, categoryFilter, tagFilter, searchQuery]);
+
+  // Closes whichever tag popover or context menu is open on a click
+  // anywhere else — the popovers/menus themselves stop propagation,
+  // so this only ever fires for a genuine "clicked away."
+  useEffect(() => {
+    if (!tagPopoverFor && !bulkTagOpen && !menuOpenFor) return;
+    function handleDocumentClick() {
+      setTagPopoverFor(null);
+      setBulkTagOpen(false);
+      setMenuOpenFor(null);
+      setNewTagName("");
+      setBulkNewTagName("");
+    }
+    document.addEventListener("click", handleDocumentClick);
+    return () => document.removeEventListener("click", handleDocumentClick);
+  }, [tagPopoverFor, bulkTagOpen, menuOpenFor]);
 
   /** Picks PDF(s) and, if any are new, loads the category list and
    * opens the review step. Already-cataloged files need no review —
@@ -197,13 +336,13 @@ export function LibrarySidebar({
     setReviewState(null);
   }
 
-  /** The "×" on a paper row — for a wrong file that got imported. Just
-   * queues the confirm dialog; the actual delete (and its "this can't
-   * be undone" warning) happens in `confirmDelete` once the user
-   * accepts, since it removes the copied PDF and every note/excerpt/
-   * reading-position tied to it, not just the catalog entry. */
-  function handleDelete(e: React.MouseEvent, paper: Paper) {
-    e.stopPropagation();
+  /** "Remove" in a row's context menu — for a wrong file that got
+   * imported. Just queues the confirm dialog; the actual delete (and
+   * its "this can't be undone" warning) happens in `confirmDelete`
+   * once the user accepts, since it removes the copied PDF and every
+   * note/excerpt/reading-position tied to it, not just the catalog
+   * entry. */
+  function handleDelete(paper: Paper) {
     setPendingDelete(paper);
   }
 
@@ -290,6 +429,149 @@ export function LibrarySidebar({
     }
   }
 
+  /** "Download" in a row's context menu — saves a copy of the paper's
+   * PDF to the researcher's real disk. */
+  async function handleDownload(paper: Paper) {
+    try {
+      const file = await libraryService.getPaperFile(workspace, paper);
+      downloadBlob(file, downloadFilename(paper));
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  /** "Download" on the selection bar — one at a time, staggered, so a
+   * browser blocking a burst of auto-downloads doesn't drop most of
+   * the batch. A single failed file doesn't stop the rest. */
+  async function handleDownloadSelected() {
+    const targets = papers.filter((p) => selectedIds.has(p.id));
+    if (targets.length === 0) return;
+    setBulkDownloading(true);
+    try {
+      for (const p of targets) {
+        try {
+          const file = await libraryService.getPaperFile(workspace, p);
+          downloadBlob(file, downloadFilename(p));
+        } catch {
+          // Best-effort — one missing/locked file shouldn't stop the batch.
+        }
+        await delay(250);
+      }
+    } finally {
+      setBulkDownloading(false);
+    }
+  }
+
+  /** A single-paper tag chip's click (the quick Important/Read
+   * toggles, and any custom tag already listed) — unambiguous here
+   * since only one paper is involved, so it just flips membership. */
+  async function toggleTag(paper: Paper, tagName: string) {
+    const existing = paper.tags.find(
+      (t) => t.name.toLowerCase() === tagName.trim().toLowerCase(),
+    );
+    try {
+      if (existing) {
+        await libraryService.removeTagFromPaper(paper.id, existing.id);
+      } else {
+        await libraryService.addTagToPaper(paper.id, tagName);
+      }
+      await refresh();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  /** The tag popover's "new tag" input — always adds, rather than
+   * toggling, so typing a name that happens to match an already-
+   * assigned tag can't accidentally remove it. */
+  async function handleAddNewTag(paper: Paper) {
+    const name = newTagName.trim();
+    if (!name) return;
+    setNewTagName("");
+    try {
+      await libraryService.addTagToPaper(paper.id, name);
+      await refresh();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  /** "Tag Selected" — applies one tag to every selected paper at
+   * once. Always adds (never toggles/removes): with several papers
+   * potentially in different states already, "add this tag to all of
+   * them" is the only unambiguous bulk action. */
+  async function applyTagToSelected(tagName: string) {
+    const name = tagName.trim();
+    const targets = papers.filter((p) => selectedIds.has(p.id));
+    if (!name || targets.length === 0) return;
+    setMessage(null);
+    try {
+      for (const p of targets) {
+        await libraryService.addTagToPaper(p.id, name);
+      }
+      setBulkTagOpen(false);
+      setBulkNewTagName("");
+      await refresh();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  /** A card's drag start — plain HTML5 drag-and-drop, not pointer
+   * tracking, since (unlike the sidebar's resize handle) this never
+   * needs to keep tracking outside the list itself. */
+  function handleRowDragStart(e: React.DragEvent, paperId: string) {
+    setDraggedId(paperId);
+    e.dataTransfer.effectAllowed = "move";
+  }
+
+  function handleRowDragOver(e: React.DragEvent, paperId: string) {
+    e.preventDefault();
+    if (draggedId && paperId !== draggedId && dragOverId !== paperId) {
+      setDragOverId(paperId);
+    }
+  }
+
+  function handleRowDragEnd() {
+    setDraggedId(null);
+    setDragOverId(null);
+  }
+
+  /** Dropping a card onto another one — reorders within whatever's
+   * currently visible (a category/tag filter may be narrowing that)
+   * and switches to "Custom order" so the new arrangement is actually
+   * what's shown, rather than being immediately overridden by
+   * whichever sort was active. Optimistic: the visible order updates
+   * immediately, `reorderPapers` persists it in the background. */
+  async function handleRowDrop(e: React.DragEvent, targetId: string) {
+    e.preventDefault();
+    const sourceId = draggedId;
+    setDraggedId(null);
+    setDragOverId(null);
+    if (!sourceId || sourceId === targetId) return;
+
+    const ids = sortedPapers.map((p) => p.id);
+    if (!ids.includes(sourceId) || !ids.includes(targetId)) return;
+    const without = ids.filter((id) => id !== sourceId);
+    const insertAt = without.indexOf(targetId);
+    without.splice(insertAt, 0, sourceId);
+    const reorderedIds = without;
+
+    const orderById = new Map(reorderedIds.map((id, i) => [id, i]));
+    setPapers((prev) =>
+      prev.map((p) => (orderById.has(p.id) ? { ...p, sortOrder: orderById.get(p.id)! } : p)),
+    );
+    setSortBy("custom");
+
+    try {
+      await libraryService.reorderPapers(reorderedIds);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : String(e));
+    } finally {
+      await refresh();
+    }
+  }
+
   /** Drag-to-resize on the right edge. Plain pointer-event listeners
    * on `document` rather than React state-driven drag, so the resize
    * keeps tracking even if the pointer briefly leaves the handle. */
@@ -340,21 +622,80 @@ export function LibrarySidebar({
         >
           {importing ? "Adding…" : "Add Paper…"}
         </button>
-        <select
-          className="library-sidebar__category-filter"
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          aria-label="Filter by category"
+        <div className="library-sidebar__search">
+          <span className="library-sidebar__search-icon" aria-hidden>
+            <SearchIcon />
+          </span>
+          <input
+            type="text"
+            className="library-sidebar__search-input"
+            placeholder="Search title, category, or tag…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search papers by title, category, or tag"
+          />
+        </div>
+        <button
+          type="button"
+          className={
+            "library-sidebar__advanced-toggle" +
+            (advancedOpen ? " library-sidebar__advanced-toggle--active" : "")
+          }
+          onClick={() => setAdvancedOpen((v) => !v)}
+          aria-expanded={advancedOpen}
+          title="Advanced search"
         >
-          <option value="">All categories</option>
-          <option value="__none__">No category</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+          <SlidersIcon /> Advanced
+        </button>
       </div>
+
+      {advancedOpen && (
+        <div className="library-sidebar__advanced-panel">
+          <select
+            className="library-sidebar__toolbar-select"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            aria-label="Filter by category"
+            title="Filter by category"
+          >
+            <option value="">All categories</option>
+            <option value="__none__">No category</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className="library-sidebar__toolbar-select"
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            aria-label="Filter by tag"
+            title="Filter by tag"
+          >
+            <option value="">All tags</option>
+            <option value="__none__">No tags</option>
+            {tags.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className="library-sidebar__toolbar-select"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            aria-label="Sort by"
+            title="Sort by"
+          >
+            <option value="recent">Sort: Recently added</option>
+            <option value="title">Sort: Title (A–Z)</option>
+            <option value="year">Sort: Year (newest)</option>
+            <option value="lastStudied">Sort: Last studied</option>
+            <option value="custom">Sort: Custom order</option>
+          </select>
+        </div>
+      )}
 
       {selectedIds.size > 0 && (
         <div className="library-sidebar__selection-bar">
@@ -362,6 +703,18 @@ export function LibrarySidebar({
           <div className="library-sidebar__selection-actions">
             <button type="button" onClick={clearSelection}>
               Cancel
+            </button>
+            <button type="button" onClick={handleDownloadSelected} disabled={bulkDownloading}>
+              {bulkDownloading ? "Downloading…" : "Download"}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setBulkTagOpen((v) => !v);
+              }}
+            >
+              Tag…
             </button>
             <button
               type="button"
@@ -371,6 +724,61 @@ export function LibrarySidebar({
               Delete Selected
             </button>
           </div>
+          {bulkTagOpen && (
+            <div
+              className="library-sidebar__tag-popover library-sidebar__tag-popover--bulk"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="library-sidebar__tag-popover-quick">
+                <button
+                  type="button"
+                  className="library-sidebar__tag-chip library-sidebar__tag-chip--pickable library-sidebar__tag-chip--important"
+                  onClick={() => applyTagToSelected(IMPORTANT_TAG_NAME)}
+                >
+                  ★ Important
+                </button>
+                <button
+                  type="button"
+                  className="library-sidebar__tag-chip library-sidebar__tag-chip--pickable library-sidebar__tag-chip--read"
+                  onClick={() => applyTagToSelected(READ_TAG_NAME)}
+                >
+                  ✓ Read
+                </button>
+              </div>
+              {otherTags.length > 0 && (
+                <div className="library-sidebar__tag-popover-list">
+                  {otherTags.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className="library-sidebar__tag-chip library-sidebar__tag-chip--pickable"
+                      onClick={() => applyTagToSelected(t.name)}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <form
+                className="library-sidebar__tag-popover-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  applyTagToSelected(bulkNewTagName);
+                }}
+              >
+                <input
+                  className="library-sidebar__tag-popover-input"
+                  placeholder="New tag…"
+                  value={bulkNewTagName}
+                  onChange={(e) => setBulkNewTagName(e.target.value)}
+                  autoFocus
+                />
+                <button type="submit" disabled={!bulkNewTagName.trim()}>
+                  Add
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       )}
 
@@ -384,16 +792,26 @@ export function LibrarySidebar({
           </p>
         )}
         {!loading && papers.length > 0 && filteredPapers.length === 0 && (
-          <p className="library-sidebar__empty">No papers in this category.</p>
+          <p className="library-sidebar__empty">No papers match this filter.</p>
         )}
-        {filteredPapers.map((p) => (
+        {sortedPapers.map((p) => (
           <div
             key={p.id}
+            draggable
+            onDragStart={(e) => handleRowDragStart(e, p.id)}
+            onDragOver={(e) => handleRowDragOver(e, p.id)}
+            onDrop={(e) => handleRowDrop(e, p.id)}
+            onDragEnd={handleRowDragEnd}
             className={
               "library-sidebar__row" +
-              (p.id === activePaperId ? " library-sidebar__row--active" : "")
+              (p.id === activePaperId ? " library-sidebar__row--active" : "") +
+              (draggedId === p.id ? " library-sidebar__row--dragging" : "") +
+              (dragOverId === p.id ? " library-sidebar__row--drag-over" : "")
             }
           >
+            <span className="library-sidebar__row-drag-handle" aria-hidden title="Drag to reorder">
+              ⠿
+            </span>
             <input
               type="checkbox"
               className="library-sidebar__row-checkbox"
@@ -417,6 +835,24 @@ export function LibrarySidebar({
                 <span className="library-sidebar__row-meta">
                   Added {new Date(p.addedAt).toLocaleDateString()}
                 </span>
+                {p.tags.length > 0 && (
+                  <span className="library-sidebar__row-tags">
+                    {p.tags.map((t) => (
+                      <span
+                        key={t.id}
+                        className={
+                          "library-sidebar__tag-chip" +
+                          (t.name === IMPORTANT_TAG_NAME
+                            ? " library-sidebar__tag-chip--important"
+                            : "") +
+                          (t.name === READ_TAG_NAME ? " library-sidebar__tag-chip--read" : "")
+                        }
+                      >
+                        {t.name}
+                      </span>
+                    ))}
+                  </span>
+                )}
               </span>
             </button>
             <select
@@ -433,15 +869,135 @@ export function LibrarySidebar({
                 </option>
               ))}
             </select>
-            <button
-              className="library-sidebar__row-delete"
-              onClick={(e) => handleDelete(e, p)}
-              disabled={deletingId === p.id}
-              title={`Remove "${p.title || p.filePath}"`}
-              aria-label={`Remove "${p.title || p.filePath}"`}
-            >
-              &times;
-            </button>
+            <div className="library-sidebar__row-actions">
+              <button
+                type="button"
+                className="library-sidebar__row-menu-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTagPopoverFor(null);
+                  setMenuOpenFor(menuOpenFor === p.id ? null : p.id);
+                }}
+                disabled={deletingId === p.id}
+                title="More actions"
+                aria-label="More actions"
+              >
+                <MoreIcon />
+              </button>
+
+              {menuOpenFor === p.id && (
+                <div className="library-sidebar__context-menu" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    className="library-sidebar__context-menu-item"
+                    onClick={() => {
+                      setMenuOpenFor(null);
+                      handleDownload(p);
+                    }}
+                  >
+                    <span className="library-sidebar__context-menu-icon" aria-hidden>
+                      <DownloadIcon />
+                    </span>
+                    Download
+                  </button>
+                  <button
+                    type="button"
+                    className="library-sidebar__context-menu-item"
+                    onClick={() => {
+                      setMenuOpenFor(null);
+                      setTagPopoverFor(p.id);
+                    }}
+                  >
+                    <span className="library-sidebar__context-menu-icon" aria-hidden>
+                      <TagIcon />
+                    </span>
+                    Add Tags{p.tags.length > 0 ? ` (${p.tags.length})` : ""}
+                  </button>
+                  <button
+                    type="button"
+                    className="library-sidebar__context-menu-item library-sidebar__context-menu-item--danger"
+                    onClick={() => {
+                      setMenuOpenFor(null);
+                      handleDelete(p);
+                    }}
+                  >
+                    <span className="library-sidebar__context-menu-icon" aria-hidden>
+                      <TrashIcon />
+                    </span>
+                    Delete
+                  </button>
+                </div>
+              )}
+
+              {tagPopoverFor === p.id && (
+                <div className="library-sidebar__tag-popover" onClick={(e) => e.stopPropagation()}>
+                  <div className="library-sidebar__tag-popover-quick">
+                    <button
+                      type="button"
+                      className={
+                        "library-sidebar__tag-chip library-sidebar__tag-chip--pickable library-sidebar__tag-chip--important" +
+                        (p.tags.some((t) => t.name === IMPORTANT_TAG_NAME)
+                          ? " library-sidebar__tag-chip--active"
+                          : "")
+                      }
+                      onClick={() => toggleTag(p, IMPORTANT_TAG_NAME)}
+                    >
+                      ★ Important
+                    </button>
+                    <button
+                      type="button"
+                      className={
+                        "library-sidebar__tag-chip library-sidebar__tag-chip--pickable library-sidebar__tag-chip--read" +
+                        (p.tags.some((t) => t.name === READ_TAG_NAME)
+                          ? " library-sidebar__tag-chip--active"
+                          : "")
+                      }
+                      onClick={() => toggleTag(p, READ_TAG_NAME)}
+                    >
+                      ✓ Read
+                    </button>
+                  </div>
+                  {otherTags.length > 0 && (
+                    <div className="library-sidebar__tag-popover-list">
+                      {otherTags.map((t) => {
+                        const active = p.tags.some((pt) => pt.id === t.id);
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            className={
+                              "library-sidebar__tag-chip library-sidebar__tag-chip--pickable" +
+                              (active ? " library-sidebar__tag-chip--active" : "")
+                            }
+                            onClick={() => toggleTag(p, t.name)}
+                          >
+                            {t.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <form
+                    className="library-sidebar__tag-popover-form"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleAddNewTag(p);
+                    }}
+                  >
+                    <input
+                      className="library-sidebar__tag-popover-input"
+                      placeholder="New tag…"
+                      value={newTagName}
+                      onChange={(e) => setNewTagName(e.target.value)}
+                      autoFocus
+                    />
+                    <button type="submit" disabled={!newTagName.trim()}>
+                      Add
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>

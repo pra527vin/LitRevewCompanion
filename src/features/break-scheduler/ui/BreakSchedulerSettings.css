@@ -1,0 +1,291 @@
+/* A section inside the Settings page — the heading, hint text, and
+   width cap all come from `.settings-page__section` around it, so
+   there's no page chrome here at all. */
+.break-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.break-settings__master {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+}
+
+.break-settings__master-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.break-settings__master-caption {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.break-settings__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: opacity 200ms ease;
+}
+
+.break-settings__list--disabled {
+  opacity: 0.5;
+}
+
+/* One reminder */
+
+.break-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.break-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.break-card__title {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.break-card__sub {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  max-width: 48ch;
+  margin-top: 2px;
+}
+
+.break-card__slider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: opacity 200ms ease;
+}
+
+.break-card__slider--muted {
+  opacity: 0.45;
+}
+
+.break-card__slider-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.break-card__slider-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.break-card__slider-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.break-card__slider-number {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.break-card__slider-unit {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.break-card__slider-bounds {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* Native range input, restyled — keeps the keyboard/step behaviour
+   the browser already gives it. The thumb needs a per-engine rule
+   (there's no cross-browser selector for it), hence the duplication. */
+.break-card__range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+
+.break-card__range:disabled {
+  cursor: default;
+}
+
+.break-card__range::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.break-card__range::-moz-range-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.break-card__range::-moz-range-progress {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.break-card__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--bg-surface);
+  border: 1px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  /* Centres the thumb on the 5px track: (5 - 18) / 2 */
+  margin-top: -6.5px;
+}
+
+.break-card__range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--bg-surface);
+  border: 1px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+.break-card__range:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+/* Next up */
+
+.break-settings__next-up {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.break-settings__next-up-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.break-settings__next-up-value {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.break-settings__preview {
+  flex: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+}
+
+.break-settings__preview:hover {
+  background: var(--bg-canvas);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Switch */
+
+.break-toggle {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  width: 38px;
+  height: 22px;
+}
+
+.break-toggle--disabled {
+  opacity: 0.5;
+}
+
+/* The real checkbox stays in the layout (not `display:none`) so it
+   keeps receiving focus and keyboard input — it's just invisible on
+   top of the track it drives. */
+.break-toggle__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.break-toggle__input:disabled {
+  cursor: default;
+}
+
+.break-toggle__track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--border-strong, var(--border));
+  transition: background 180ms ease;
+  pointer-events: none;
+}
+
+.break-toggle__input:checked + .break-toggle__track {
+  background: var(--accent);
+}
+
+.break-toggle__input:focus-visible + .break-toggle__track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.break-toggle__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.break-toggle__input:checked + .break-toggle__track .break-toggle__knob {
+  transform: translateX(16px);
+}

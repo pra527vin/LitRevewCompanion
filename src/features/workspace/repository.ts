@@ -11,6 +11,8 @@ import m0006 from "./migrations/0006_paper_source_type.sql?raw";
 import m0007 from "./migrations/0007_workspace_last_import_dir.sql?raw";
 import m0008 from "./migrations/0008_categories.sql?raw";
 import m0009 from "./migrations/0009_model_specification.sql?raw";
+import m0010 from "./migrations/0010_tags.sql?raw";
+import m0011 from "./migrations/0011_paper_sort_order.sql?raw";
 
 /**
  * Data-access layer. Knows how to reach a workspace folder (via the
@@ -45,6 +47,8 @@ const MIGRATIONS: Array<[number, string]> = [
   [7, m0007],
   [8, m0008],
   [9, m0009],
+  [10, m0010],
+  [11, m0011],
 ];
 
 const DB_FILENAME = "database.sqlite";

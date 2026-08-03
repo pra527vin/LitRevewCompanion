@@ -1,0 +1,381 @@
+/* Full page (like Settings), not a modal — .app-shell is a column
+   flexbox with the Toolbar as its first fixed-height child, so flex:1
+   here fills exactly what's left below it. */
+.dashboard-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-canvas);
+}
+
+.dashboard-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px clamp(24px, 6vw, 72px);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.dashboard-page__header h2 {
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.dashboard-page__done {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+}
+
+.dashboard-page__done:hover {
+  background: var(--bg-canvas);
+}
+
+.dashboard-page__content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* Generous, responsive side padding — grows with the viewport
+     (up to 72px) rather than a fixed value, so the page still uses
+     its full width on a narrow window instead of wasting it on
+     padding. */
+  padding: 24px clamp(24px, 6vw, 72px) 48px;
+}
+
+.dashboard__status {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  text-align: center;
+  padding: 48px 24px;
+}
+
+/* The documents table alongside a narrower column (Continue Reading
+   above By Category) — `align-items: stretch` (grid's default) makes
+   both columns match the row's height, which is effectively the
+   table's height (the side column's own content rarely drives it,
+   per `.dashboard-page__table-side`'s `min-height: 0` below) — see
+   that rule's own comment for why that matters. 340px (rather than
+   an even 1/3 split) keeps the table itself the visual focus — the
+   side column is there to support it, not compete with it. Wraps to
+   a single column on a narrow window. */
+.dashboard-page__table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+@media (max-width: 760px) {
+  .dashboard-page__table-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stacked below the table rather than beside it, so there's no
+     table height to match — the panels take their natural height and
+     the page scrolls, instead of two tiny scroll boxes. Undoes the
+     height-capping the side-by-side layout needs. */
+  .dashboard-page__table-side {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .dashboard__panel--scrollable,
+  .dashboard__panel--category {
+    flex: 0 0 auto;
+  }
+
+  .dashboard__list,
+  .dashboard__category-list {
+    overflow-y: visible;
+  }
+}
+
+.dashboard-page__table-main {
+  min-width: 0;
+}
+
+/* Continue Reading stacked above By Category, both sharing this
+   column's height — which the grid sets from the table's height, so
+   neither panel can make the page taller. They split it proportionally
+   (`flex: 1 1 0` on each, via `--scrollable`/`--category` below) and
+   scroll their own lists internally instead. `min-height: 0` at every
+   level is what makes that work: without it, flex/grid children refuse
+   to shrink below their content's natural height and the row grows
+   instead of the lists scrolling. */
+.dashboard-page__table-side {
+  min-width: 0;
+  /* `height: 0` + `min-height: 100%` rather than plain `height: 100%`:
+     a grid item's content still contributes to its row's height even
+     when it's set to overflow, so with `height: 100%` a long category
+     list would grow the row (and drag the table taller with it — the
+     exact thing this column must not do). Zeroing the height removes
+     that contribution entirely, leaving the row sized by the table
+     alone; `min-height: 100%` then stretches this column back up to
+     whatever height the table settled on. */
+  height: 0;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.dashboard__section {
+  padding-top: 0;
+}
+
+/* One summary panel's card chrome — matches the look of the KPI
+   tiles and the documents table box, so the page reads as one
+   consistent set of widgets rather than a mix of bare and boxed
+   sections. */
+.dashboard__panel {
+  min-width: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+/* The two side-column panels (Continue Reading, By Category) — each
+   claims an equal share of the column's table-matched height
+   (`flex-basis: 0` so the split is by ratio, not by content size) and
+   scrolls its own list rather than growing the column. A panel whose
+   content is shorter than its share simply doesn't fill it; the taller
+   one scrolls. */
+.dashboard__panel--scrollable,
+.dashboard__panel--category {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard__section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.dashboard__empty {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 4px 0 2px;
+}
+
+/* KPI tiles */
+
+.dashboard__kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.dashboard__kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  /* Neutralizes `<button>`'s own UA defaults for the four clickable
+     tiles below — harmless on the non-clickable `<div>` tiles too. */
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+/* Total Documents / Completed / In Progress / Not Started — jump down
+   to the documents table (see DashboardView.tsx's `handleJump*`).
+   Completion Rate and Important & Unread stay plain `<div>`s (no
+   single, obvious table filter corresponds to either one). */
+.dashboard__kpi--clickable {
+  cursor: pointer;
+}
+
+.dashboard__kpi--clickable:hover {
+  border-color: var(--accent);
+  background: var(--bg-canvas);
+}
+
+.dashboard__kpi-value {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.dashboard__kpi-label {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+
+.dashboard__kpi--accent {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+}
+
+.dashboard__kpi--accent .dashboard__kpi-value {
+  color: var(--accent);
+}
+
+.dashboard__kpi--important {
+  background: rgba(217, 164, 65, 0.14);
+  border-color: #d9a441;
+}
+
+.dashboard__kpi--important .dashboard__kpi-value {
+  color: #9a6b12;
+}
+
+/* Continue Reading — a single column of rows, not a card grid. */
+
+.dashboard__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.dashboard__list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  /* Contrasts against the panel's own --bg-surface background,
+     same relationship the KPI tiles have with the page canvas. */
+  background: var(--bg-canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.dashboard__list-item:hover {
+  border-color: var(--accent);
+}
+
+.dashboard__list-thumb {
+  flex-shrink: 0;
+  width: 26px;
+  height: 34px;
+}
+
+.dashboard__list-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dashboard__list-title {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard__list-meta {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.dashboard__progress-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.dashboard__progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+
+/* By Category breakdown — compact, stacked rows sized for its panel. */
+
+.dashboard__category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.dashboard__category-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 4px;
+  margin: -4px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dashboard__category-row:hover {
+  background: var(--bg-canvas);
+}
+
+.dashboard__category-row:hover .dashboard__category-name {
+  color: var(--accent);
+}
+
+.dashboard__category-row-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dashboard__category-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard__category-count {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+}
+
+.dashboard__category-bar-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-canvas);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.dashboard__category-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}

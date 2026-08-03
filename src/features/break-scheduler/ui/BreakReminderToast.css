@@ -1,0 +1,186 @@
+.break-toast__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(24, 33, 41, 0.45);
+  backdrop-filter: blur(3px);
+  animation: break-toast-fade 220ms ease;
+}
+
+.break-toast {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 26px 26px 22px;
+  text-align: center;
+  animation: break-toast-rise 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes break-toast-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes break-toast-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+  }
+}
+
+.break-toast__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 14px;
+}
+
+.break-toast__pulse-ring {
+  width: 34px;
+  height: 34px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.break-toast__pulse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: break-toast-pulse 2s ease-in-out infinite;
+}
+
+@keyframes break-toast-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.45;
+  }
+}
+
+.break-toast__title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.break-toast__body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Holds its height while the quote fetch is still in flight, so the
+   card doesn't resize a beat after it appears. */
+.break-toast__quote {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+.break-toast__quote--ready {
+  opacity: 1;
+}
+
+.break-toast__quote-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  font-style: italic;
+  text-wrap: pretty;
+}
+
+.break-toast__quote-author {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.break-toast__dismiss {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-canvas);
+  color: var(--text-secondary);
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.break-toast__dismiss:hover {
+  background: var(--bg-surface);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Shows the auto-close running down, so the card disappearing on its
+   own reads as intended rather than as a glitch. Duration is set
+   inline from `REMINDER_AUTO_DISMISS_MS` — one source of truth with
+   the timer that actually closes it. */
+.break-toast__countdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--border);
+}
+
+.break-toast__countdown-bar {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+  animation-name: break-toast-countdown;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes break-toast-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .break-toast__countdown-bar {
+    animation: none;
+  }
+}

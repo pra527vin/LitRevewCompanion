@@ -1,5 +1,17 @@
 import { storageClient } from "../storage";
 import { Paper, PaperRow, MetadataUpdate, fromRow } from "./types";
+import { tagRepository } from "./tagRepository";
+
+/** Merges in each paper's tags, aggregated by one extra query rather
+ * than a per-row JOIN (which would multiply a paper's row once per
+ * tag). Used by every listing query — `findByHash`'s single-paper
+ * dedup check has no reason to bother, so it leaves `fromRow`'s
+ * default empty array as-is. */
+async function attachTags(papers: Paper[]): Promise<Paper[]> {
+  if (papers.length === 0) return papers;
+  const byPaper = await tagRepository.listAllAssignments();
+  return papers.map((p) => ({ ...p, tags: byPaper.get(p.id) ?? [] }));
+}
 
 /**
  * Data-access layer for `papers`. No business rules here (e.g. "is
@@ -45,7 +57,7 @@ export const paperRepository = {
        LEFT JOIN categories ON categories.id = papers.category_id
        ORDER BY papers.added_at DESC`,
     );
-    return rows.map(fromRow);
+    return attachTags(rows.map(fromRow));
   },
 
   /**
@@ -70,7 +82,7 @@ export const paperRepository = {
        ORDER BY papers.title ASC`,
       [pattern],
     );
-    return rows.map(fromRow);
+    return attachTags(rows.map(fromRow));
   },
 
   /**
@@ -125,6 +137,22 @@ export const paperRepository = {
   },
 
   /**
+   * Assigns sequential `sort_order` values (0, 1, 2, …) to exactly the
+   * papers named, in the order given — the Library sidebar's
+   * drag-to-reorder, applied to whatever's currently visible (a
+   * category/tag filter may be narrowing that). Papers not named here
+   * keep whatever `sort_order` they already had.
+   */
+  async reorder(paperIdsInOrder: string[]): Promise<void> {
+    for (let i = 0; i < paperIdsInOrder.length; i += 1) {
+      await storageClient.execute("UPDATE papers SET sort_order = $1 WHERE id = $2", [
+        i,
+        paperIdsInOrder[i],
+      ]);
+    }
+  },
+
+  /**
    * Removes a paper's row and everything scoped to it in every other
    * table — `reading_state`, `notebook_notes`, `excerpts`,
    * `current_thought` all declare `paper_id ... REFERENCES papers(id)
@@ -139,6 +167,7 @@ export const paperRepository = {
     await storageClient.execute("DELETE FROM notebook_notes WHERE paper_id = $1", [id]);
     await storageClient.execute("DELETE FROM excerpts WHERE paper_id = $1", [id]);
     await storageClient.execute("DELETE FROM current_thought WHERE paper_id = $1", [id]);
+    await storageClient.execute("DELETE FROM paper_tags WHERE paper_id = $1", [id]);
     await storageClient.execute("DELETE FROM papers WHERE id = $1", [id]);
   },
 };

@@ -14,17 +14,19 @@ export interface ToolbarProps {
 
 export type ToolbarAction =
   | "switch-workspace"
+  | "dashboard"
   | "toggle-library"
-  | "search"
   | "review-matrix"
   | "export"
+  | "refreshment"
   | "settings";
 
 const ACTIONS: { id: ToolbarAction; label: string }[] = [
+  { id: "dashboard", label: "Progress" },
   { id: "toggle-library", label: "Library" },
-  { id: "search", label: "Search" },
   { id: "review-matrix", label: "Review Matrix" },
   { id: "export", label: "Export" },
+  { id: "refreshment", label: "Refreshment" },
   { id: "settings", label: "Settings" },
 ];
 
